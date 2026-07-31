@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { products } from "@/data/products";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -19,8 +19,23 @@ const categories = [
 export default function Shop() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
+
+  useEffect(() => {
+    async function fetchProducts() {
+      const { data, error } = await supabase.from("products").select("*");
+      if (error) {
+        console.error("Error fetching products:", error);
+      } else {
+        setProducts(data);
+      }
+      setLoading(false);
+    }
+    fetchProducts();
+  }, []);
 
   const filtered = products.filter((p) => {
     const matchesCategory =
@@ -30,6 +45,12 @@ export default function Shop() {
       .includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  if (loading) {
+    return (
+      <p className="text-center py-20 text-gray-500">Loading products...</p>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">

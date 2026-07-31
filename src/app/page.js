@@ -10,7 +10,7 @@ export default function Home() {
               Fast Grocery Delivery
             </p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-4 leading-tight">
-              Fresh essentials for <span className="text-red-600">every day</span>.
+              Fresh essentials for <span className="text-red-600">every day.</span>
             </h1>
             <p className="text-gray-600 text-lg mb-8 max-w-md">
               Shop pantry staples, drinks, snacks, and household items from Rexmart with quick delivery to your doorstep.
