@@ -21,6 +21,7 @@ export default function Shop() {
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState("");
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
 
@@ -105,13 +106,23 @@ export default function Shop() {
                 ₦{product.price.toLocaleString()}
               </p>
               <button
-                onClick={() => addToCart(product)}
+                onClick={() => {
+                  addToCart(product);
+                  setToast(`${product.name} added to cart!`);
+                  setTimeout(() => setToast(""), 2000);
+                }}
                 className="mt-auto bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold px-4 py-2 rounded-full w-full"
               >
                 Add to Cart
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg z-50">
+          {toast}
         </div>
       )}
     </div>
