@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePaystackPayment } from "react-paystack";
+import dynamic from "next/dynamic";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/lib/supabaseClient";
+
+const PayButton = dynamic(() => import("@/components/paybutton"), {
+  ssr: false,
+});
 
 export default function Cart() {
   const { cart, removeFromCart, updateQty, total, clearCart } = useCart();
@@ -13,15 +17,8 @@ export default function Cart() {
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-
-  const paystackConfig = {
-    reference: new Date().getTime().toString(),
-    email: email || "guest@rexmart.com",
-    amount: total * 100, // Paystack uses kobo, not naira
-    publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig);
+  const [placedOrderId, setPlacedOrderId] = useState(null);
+  const [placedOrderEmail, setPlacedOrderEmail] = useState("");
 
   function buildWhatsAppMessage() {
     let message = `Hello Rex Mart, I'd like to place an order:\n\n`;
@@ -42,21 +39,26 @@ export default function Cart() {
 
   async function saveOrder(paymentStatus, paymentReference) {
     setPlacing(true);
-    const { error } = await supabase.from("orders").insert({
-      customer_email: email || "guest@rexmart.com",
-      items: cart,
-      total: total,
-      delivery_method: deliveryMethod,
-      address: deliveryMethod === "delivery" ? address : null,
-      payment_status: paymentStatus,
-      payment_reference: paymentReference || null,
+    const emailToSave = email || "guest@rexmart.com";
+
+    const { data, error } = await supabase.rpc("create_order", {
+      p_customer_email: emailToSave,
+      p_items: cart,
+      p_total: total,
+      p_delivery_method: deliveryMethod,
+      p_address: deliveryMethod === "delivery" ? address : null,
+      p_payment_status: paymentStatus,
+      p_payment_reference: paymentReference || null,
     });
+
     setPlacing(false);
 
     if (error) {
       console.error("Error saving order:", error);
       alert("Something went wrong saving your order. Please try again.");
     } else {
+      setPlacedOrderId(data);
+      setPlacedOrderEmail(emailToSave);
       clearCart();
       setOrderPlaced(true);
     }
@@ -66,21 +68,6 @@ export default function Cart() {
     saveOrder("paid", reference.reference);
   }
 
-  function handlePaystackClose() {
-    console.log("Payment window closed");
-  }
-
-  function handlePayOnline() {
-    if (!email) {
-      alert("Please enter your email before paying online.");
-      return;
-    }
-    initializePayment({
-      onSuccess: handlePaystackSuccess,
-      onClose: handlePaystackClose,
-    });
-  }
-
   if (orderPlaced) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-24 text-center">
@@ -88,15 +75,38 @@ export default function Cart() {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Order Placed!
         </h1>
-        <p className="text-gray-500 mb-6">
+        <p className="text-gray-500 mb-2">
           Thank you for shopping with Rex Mart. We&apos;ll be in touch soon.
         </p>
-        <Link
-          href="/shop"
-          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-full"
-        >
-          Continue Shopping
-        </Link>
+
+        {placedOrderId && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 inline-block">
+            <p className="text-sm text-gray-500">Your order number</p>
+            <p className="text-2xl font-bold text-red-600">#{placedOrderId}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Save this number — you&apos;ll need it with your email to track your order.
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/shop"
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-full"
+          >
+            Continue Shopping
+          </Link>
+          {placedOrderId && (
+            <Link
+              href={`/track?email=${encodeURIComponent(
+                placedOrderEmail
+              )}&order=${placedOrderId}`}
+              className="border-2 border-red-600 text-red-600 hover:bg-red-50 font-semibold px-6 py-3 rounded-full"
+            >
+              Track This Order
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
@@ -182,7 +192,7 @@ export default function Cart() {
           className="w-full border border-gray-300 rounded-full px-5 py-2.5 focus:outline-none focus:border-red-600"
         />
         <p className="text-gray-400 text-xs mt-1">
-          Used for order confirmation and online payment.
+          Used for order confirmation, online payment, and order tracking.
         </p>
       </div>
 
@@ -233,13 +243,12 @@ export default function Cart() {
 
       {/* CHECKOUT OPTIONS */}
       <div className="space-y-3">
-        <button
-          onClick={handlePayOnline}
+        <PayButton
+          email={email}
+          total={total}
           disabled={placing}
-          className="block w-full text-center bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-3 rounded-full transition disabled:opacity-50"
-        >
-          {placing ? "Processing..." : "Pay Online"}
-        </button>
+          onSuccess={handlePaystackSuccess}
+        />
 
         <a
           href={`https://wa.me/2347040443049?text=${buildWhatsAppMessage()}`}

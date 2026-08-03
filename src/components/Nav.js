@@ -30,9 +30,15 @@ export default function Nav() {
     setUser(null);
   }
 
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase());
+  const isAdmin = user && adminEmails.includes(user.email.toLowerCase());
+
   const links = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop" },
+    { href: "/track", label: "Track Order" },
     { href: "/contact", label: "Contact" },
     { href: "/delivery", label: "Delivery" },
     { href: "/wishlist", label: `❤️ (${wishlist.length})` },
@@ -57,6 +63,12 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+
+          {isAdmin && (
+            <Link href="/admin" className="hover:text-gray-200 transition font-semibold">
+              Admin
+            </Link>
+          )}
 
           {user ? (
             <button onClick={handleLogout} className="hover:text-gray-200 transition">
@@ -102,6 +114,17 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="block px-6 py-3 text-red-600 font-semibold border-b border-gray-100 hover:bg-gray-50"
+            >
+              Admin
+            </Link>
+          )}
+
           {user ? (
             <button
               onClick={() => {

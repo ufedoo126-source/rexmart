@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import ReviewsModal from "@/components/ReviewsModal";
 
 const categories = [
   "All",
@@ -22,6 +23,7 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
+  const [reviewProduct, setReviewProduct] = useState(null);
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
 
@@ -98,7 +100,17 @@ export default function Shop() {
               >
                 {isWishlisted(product.id) ? "❤️" : "🤍"}
               </button>
-              <p className="text-5xl mb-3">{product.image}</p>
+
+              {product.image?.startsWith("http") ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-20 h-20 object-cover rounded-lg mb-3"
+                />
+              ) : (
+                <p className="text-5xl mb-3">{product.image}</p>
+              )}
+
               <p className="font-semibold text-gray-900 mb-1">
                 {product.name}
               </p>
@@ -111,9 +123,15 @@ export default function Shop() {
                   setToast(`${product.name} added to cart!`);
                   setTimeout(() => setToast(""), 2000);
                 }}
-                className="mt-auto bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold px-4 py-2 rounded-full w-full"
+                className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold px-4 py-2 rounded-full w-full mb-2"
               >
                 Add to Cart
+              </button>
+              <button
+                onClick={() => setReviewProduct(product)}
+                className="text-red-600 text-sm font-medium hover:underline"
+              >
+                Reviews
               </button>
             </div>
           ))}
@@ -124,6 +142,13 @@ export default function Shop() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg z-50">
           {toast}
         </div>
+      )}
+
+      {reviewProduct && (
+        <ReviewsModal
+          product={reviewProduct}
+          onClose={() => setReviewProduct(null)}
+        />
       )}
     </div>
   );
