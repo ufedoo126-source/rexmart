@@ -11,7 +11,7 @@ export default function Contact() {
         <div className="space-y-6">
           <div>
             <p className="font-semibold text-red-600">Address</p>
-            <p className="text-gray-600">Rex Mart, Lagos, Nigeria</p>
+            <p className="text-gray-600">Rex Mart, Abuja, Nigeria</p>
             <a
               href="https://www.google.com/maps?q=9.0372960,7.5910160"
               target="_blank"
